@@ -1,14 +1,18 @@
 package com.maryang.fastrxjava.ui
 
 import android.os.Bundle
-import android.view.View
 import androidx.appcompat.app.AppCompatActivity
+import androidx.databinding.DataBindingUtil
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.maryang.fastrxjava.R
-import kotlinx.android.synthetic.main.activity_github_repos.*
+import com.maryang.fastrxjava.databinding.ActivityGithubReposBinding
+import io.reactivex.disposables.CompositeDisposable
 
 
 class GithubReposActivity : AppCompatActivity() {
+    private lateinit var binding: ActivityGithubReposBinding
+
+    private val disposable = CompositeDisposable()
 
     private val viewModel: GithubReposViewModel by lazy {
         GithubReposViewModel()
@@ -19,36 +23,28 @@ class GithubReposActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_github_repos)
+        binding = DataBindingUtil.setContentView(this, R.layout.activity_github_repos)
 
-        recyclerView.layoutManager = LinearLayoutManager(this)
-        recyclerView.adapter = this.adapter
+        binding.recyclerView.layoutManager = LinearLayoutManager(this)
+        binding.recyclerView.adapter = this.adapter
 
-        refreshLayout.setOnRefreshListener { load() }
+        binding.refreshLayout.setOnRefreshListener { load() }
 
-        load(true)
+        binding.viewModel = viewModel
+
+        load()
     }
 
-    private fun load(showLoading: Boolean = false) {
-        if (showLoading)
-            showLoading()
-        viewModel.getGithubRepos(
-            {
-                hideLoading()
-                adapter.items = it
-            },
-            {
-                hideLoading()
-            }
+    override fun onDestroy() {
+        super.onDestroy()
+
+        disposable.dispose()
+    }
+
+    private fun load() {
+        disposable.clear()
+        disposable.add(
+            viewModel.getGithubRepos()
         )
-    }
-
-    private fun showLoading() {
-        loading.visibility = View.VISIBLE
-    }
-
-    private fun hideLoading() {
-        loading.visibility = View.GONE
-        refreshLayout.isRefreshing = false
     }
 }
